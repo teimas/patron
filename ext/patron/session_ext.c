@@ -190,7 +190,8 @@ static int formadd_files(VALUE data_key, VALUE data_value, VALUE self) {
   VALUE value = rb_obj_as_string(data_value);
 
   curl_formadd(&state->post, &state->last, CURLFORM_PTRNAME, RSTRING_PTR(name),
-                CURLFORM_FILE, RSTRING_PTR(value), CURLFORM_END); 
+                CURLFORM_FILE, RSTRING_PTR(value),
+                CURLFORM_FILENAME, RSTRING_PTR(name), CURLFORM_END);
                 
   return 0;
 }
