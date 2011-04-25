@@ -1,5 +1,6 @@
 ## -------------------------------------------------------------------
 ##
+## Patron HTTP Client: Request class
 ## Copyright (c) 2008 The Hive http://www.thehive.com/
 ##
 ## Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -21,49 +22,29 @@
 ## THE SOFTWARE.
 ##
 ## -------------------------------------------------------------------
-require 'rake/clean'
-require 'rake/rdoctask'
-require 'rake/extensiontask'
-require 'rspec/core/rake_task'
-require 'bundler'
 
-Rake::ExtensionTask.new do |ext|
-  ext.name = 'session_ext'           # indicate the name of the extension.
-  ext.ext_dir = 'ext/patron'         # search for 'hello_world' inside it.
-  ext.lib_dir = 'lib/patron'         # put binaries into this folder.
+require 'cgi'
+
+module Patron
+  module Util
+    extend self
+    
+    def build_query_pairs_from_hash(hash, escape_values=false)
+      pairs = []
+      recursive = Proc.new do |h, prefix|
+        h.each_pair do |k,v|
+          key = prefix == '' ? k : "#{prefix}[#{k}]"
+          v = CGI::escape(v.to_s) if escape_values
+          v.is_a?(Hash) ? recursive.call(v, key) : pairs << "#{key}=#{v}"
+        end
+      end
+      recursive.call(hash, '')
+      pairs
+    end
+    
+    def build_query_string_from_hash(hash, escape_values=false)
+      build_query_pairs_from_hash(hash, escape_values).join('&')
+    end
+    
+  end
 end
-
-Bundler::GemHelper.install_tasks
-
-CLEAN.include FileList["ext/patron/*"].exclude(/^.*\.(rb|c)$/)
-CLOBBER.include %w( doc coverage pkg )
-
-desc "Start an IRB shell"
-task :shell => :compile do
-  sh 'irb -I./lib -I./ext -r patron'
-end
-
-Rake::RDocTask.new do |rdoc|
-  rdoc.rdoc_dir = 'rdoc'
-  rdoc.title = 'Patron documentation'
-  rdoc.main = 'README.txt'
-  rdoc.rdoc_files.include('README.txt')
-  rdoc.rdoc_files.include('lib/**/*.rb')
-end
-
-desc "Run specs"
-RSpec::Core::RakeTask.new do |t|
-  t.rspec_opts = %w( --colour --format progress )
-  t.pattern = 'spec/**/*_spec.rb'
-end
-
-task :spec => [:compile]
-
-desc "Run specs with RCov"
-RSpec::Core::RakeTask.new('spec:rcov') do |t|
-  t.pattern = 'spec/**/*_spec.rb'
-  t.rcov = true
-  t.rcov_opts = %q(--sort coverage --comments --exclude "spec")
-end
-
-task :default => :spec
