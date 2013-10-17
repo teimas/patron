@@ -336,7 +336,9 @@ static void set_options_from_request(VALUE self, VALUE request) {
   VALUE insecure = rb_iv_get(request, "@insecure");
   if(!NIL_P(insecure)) {
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 1);
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0);
+    curl_easy_setopt(curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_SSLv3);
+
   }
 
   VALUE buffer_size = rb_iv_get(request, "@buffer_size");
