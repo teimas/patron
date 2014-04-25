@@ -24,6 +24,8 @@
 // -------------------------------------------------------------------
 #include <ruby.h>
 #include <curl/curl.h>
+#include <ruby/st.h>
+
 
 static VALUE mPatron = Qnil;
 static VALUE mProxyType = Qnil;
@@ -170,6 +172,7 @@ static int each_http_header(VALUE header_key, VALUE header_value, VALUE self) {
   return 0;
 }
 
+
 static int formadd_values(VALUE data_key, VALUE data_value, VALUE self) {
   struct curl_state *state;
   Data_Get_Struct(self, struct curl_state, state);
@@ -182,16 +185,38 @@ static int formadd_values(VALUE data_key, VALUE data_value, VALUE self) {
   return 0;
 }
 
+static int
+convert_hash_to_a(VALUE key, VALUE value, VALUE ary) {
+  if (key == Qundef) return ST_CONTINUE;
+  rb_ary_push(ary, key);
+  return rb_ary_push(ary, value);
+}
+
 static int formadd_files(VALUE data_key, VALUE data_value, VALUE self) {
   struct curl_state *state;
   Data_Get_Struct(self, struct curl_state, state);
 
   VALUE name = rb_obj_as_string(data_key);
-  VALUE value = rb_obj_as_string(data_value);
+  VALUE filename;
+  VALUE filepath;
 
-  curl_formadd(&state->post, &state->last, CURLFORM_PTRNAME, RSTRING_PTR(name),
-                CURLFORM_FILE, RSTRING_PTR(value),
-                CURLFORM_FILENAME, RSTRING_PTR(name), CURLFORM_END);
+  if (rb_type(data_value) == T_HASH) {
+    VALUE ary;
+    ary = rb_ary_new();
+    rb_hash_foreach(data_value, convert_hash_to_a, ary);
+
+    filename = rb_ary_entry(ary, 0);
+    filepath = rb_ary_entry(ary, 1);
+  } else {
+    filename = name;
+    filepath = rb_obj_as_string(data_value);
+  }
+
+  curl_formadd(&state->post, &state->last, 
+                CURLFORM_PTRNAME, RSTRING_PTR(name),
+                CURLFORM_FILE, RSTRING_PTR(filepath),
+                CURLFORM_FILENAME, RSTRING_PTR(filename),
+                CURLFORM_END);
                 
   return 0;
 }

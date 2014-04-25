@@ -158,6 +158,9 @@ module Patron
     end
 
     # Uploads the contents of a file and data to the specified +url+ using HTTP POST.
+    # filename is a hash with one of the following structures:
+    #    { :input_name => filepath}
+    #    { :input_name => { :filename => filepath } } (Useful with Tempfiles)
     def post_multipart(url, data, filename, headers = {})
       request(:post, url, headers, {:data => data, :file => filename, :multipart => true})
     end
