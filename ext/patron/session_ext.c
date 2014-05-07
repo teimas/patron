@@ -24,7 +24,7 @@
 // -------------------------------------------------------------------
 #include <ruby.h>
 #include <curl/curl.h>
-#include <ruby/st.h>
+#include <st.h>
 
 
 static VALUE mPatron = Qnil;
