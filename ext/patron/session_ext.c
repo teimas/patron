@@ -362,8 +362,14 @@ static void set_options_from_request(VALUE self, VALUE request) {
   if(!NIL_P(insecure)) {
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0);
-    curl_easy_setopt(curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_SSLv3);
+  }
 
+  VALUE sslversion = rb_iv_get(request, "@sslversion");
+  if(!NIL_P(sslversion)) {
+    curl_easy_setopt(curl, CURLOPT_SSLVERSION, FIX2INT(sslversion));
+  } else {
+    // Defaults to TLSv1
+    curl_easy_setopt(curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1);
   }
 
   VALUE buffer_size = rb_iv_get(request, "@buffer_size");

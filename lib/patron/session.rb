@@ -68,6 +68,13 @@ module Patron
     # Does this session stricly verify SSL certificates?
     attr_accessor :insecure
 
+    # SSL Version to use acording to curl 
+    # CURL_SSLVERSION_DEFAULT, // 0
+    # CURL_SSLVERSION_TLSv1,   // 1
+    # CURL_SSLVERSION_SSLv2,   // 2
+    # CURL_SSLVERSION_SSLv3,   // 3
+    attr_accessor :sslversion
+
     # Set the buffer size for this request. This option will
     # only be set if buffer_size is non-nil
     attr_accessor :buffer_size
@@ -199,6 +206,7 @@ module Patron
       req.proxy_type = proxy_type
       req.auth_type = auth_type
       req.insecure = insecure
+      req.sslversion = sslversion
       req.buffer_size = buffer_size
 
       url = self.base_url.to_s + url.to_s
