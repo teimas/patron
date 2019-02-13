@@ -24,7 +24,7 @@
 // -------------------------------------------------------------------
 #include <ruby.h>
 #include <curl/curl.h>
-#include <st.h>
+#include <ruby/st.h>
 
 
 static VALUE mPatron = Qnil;
@@ -181,7 +181,7 @@ static int formadd_values(VALUE data_key, VALUE data_value, VALUE self) {
   VALUE value = rb_obj_as_string(data_value);
 
   curl_formadd(&state->post, &state->last, CURLFORM_PTRNAME, RSTRING_PTR(name),
-                CURLFORM_PTRCONTENTS, RSTRING_PTR(value), CURLFORM_END);  
+                CURLFORM_PTRCONTENTS, RSTRING_PTR(value), CURLFORM_END);
   return 0;
 }
 
@@ -199,6 +199,7 @@ static int formadd_files(VALUE data_key, VALUE data_value, VALUE self) {
   VALUE name = rb_obj_as_string(data_key);
   VALUE filename;
   VALUE filepath;
+  VALUE file_content_type;
 
   if (rb_type(data_value) == T_HASH) {
     VALUE ary;
@@ -207,17 +208,39 @@ static int formadd_files(VALUE data_key, VALUE data_value, VALUE self) {
 
     filename = rb_ary_entry(ary, 0);
     filepath = rb_ary_entry(ary, 1);
-  } else {
-    filename = name;
-    filepath = rb_obj_as_string(data_value);
-  }
+    if (rb_type(filepath) == T_HASH) {
+      VALUE ary2;
+      ary2 = rb_ary_new();
+      rb_hash_foreach(filepath, convert_hash_to_a, ary2);
+      filepath = rb_ary_entry(ary2, 0);
+      file_content_type = rb_ary_entry(ary2, 1);
 
-  curl_formadd(&state->post, &state->last, 
+      curl_formadd(&state->post, &state->last,
+                CURLFORM_PTRNAME, RSTRING_PTR(name),
+                CURLFORM_FILE, RSTRING_PTR(filepath),
+                CURLFORM_FILENAME, RSTRING_PTR(filename),
+                CURLFORM_CONTENTTYPE, RSTRING_PTR(file_content_type),
+                CURLFORM_END);
+    } else {
+      curl_formadd(&state->post, &state->last,
                 CURLFORM_PTRNAME, RSTRING_PTR(name),
                 CURLFORM_FILE, RSTRING_PTR(filepath),
                 CURLFORM_FILENAME, RSTRING_PTR(filename),
                 CURLFORM_END);
-                
+    }
+  } else {
+    filename = name;
+    filepath = rb_obj_as_string(data_value);
+
+    curl_formadd(&state->post, &state->last,
+                CURLFORM_PTRNAME, RSTRING_PTR(name),
+                CURLFORM_FILE, RSTRING_PTR(filepath),
+                CURLFORM_FILENAME, RSTRING_PTR(filename),
+                CURLFORM_END);
+  }
+
+
+
   return 0;
 }
 
@@ -301,11 +324,11 @@ static void set_options_from_request(VALUE self, VALUE request) {
         } else {   rb_raise(rb_eArgError, "Data and Filename must be passed in a hash.");}
         }
         curl_easy_setopt(curl, CURLOPT_HTTPPOST, state->post);
-        
+
       } else {
          rb_raise(rb_eArgError, "Multipart PUT not supported");
       }
-    
+
     } else {
       rb_raise(rb_eArgError, "Must provide either data or a filename when doing a PUT or POST");
     }
